@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact | ope674c.dev</title>
+  <link rel="stylesheet" href="assets/main.css" />
+  <script src="assets/script.js" defer></script>
+</head>
+
+<body>
+  <header class="navbar">
+    <a href="index.html" class="logo">ope674c<span>.dev</span></a>
+
+    <button class="menu-btn" id="menuBtn">☰</button>
+
+    <nav id="navMenu">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="projects.html">Projects</a>
+      <a href="blog.html">Blog</a>
+      <a href="changelog.html">Changelog</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </header>
+
+  <main class="section contact-section">
+    <p class="eyebrow">Contact</p>
+    <h1>Reach Out</h1>
+    <p class="subtitle">
+      Reach out! I don't bite. 
+    </p>
+
+<form class="contact-form" action="https://formspree.io/f/mkoykrqo" method="POST">
+  <label for="name">Name</label>
+  <input type="text" id="name" name="name" placeholder="Your name" required>
+
+  <label for="email">Email</label>
+  <input type="email" id="email" name="email" placeholder="you@example.com" required>
+
+  <label for="subject">Subject</label>
+  <input type="text" id="subject" name="subject" placeholder="What is this about?" required>
+
+  <label for="message">Message</label>
+  <textarea id="message" name="message" rows="6" placeholder="Write your message here..." required></textarea>
+
+  <input type="hidden" name="_subject" value="New message from ope674c.dev">
+  <input type="text" name="_gotcha" style="display:none">
+
+  <button type="submit">Send Message</button>
+</form>
+
+  <footer>
+    <p>© 2026 ope674c.dev. Typed by my own hands.</p>
+  </footer>
+</body>
+</html>

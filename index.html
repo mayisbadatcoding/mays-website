@@ -1,41 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Under Construction</title>
+  <title>ope674c.dev</title>
 
-    <link rel="stylesheet" href="assets/main.css">
-
-    <link href="https://fonts.googleapis.com/css2?family=Parkinsans:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/main.css" />
+  <script src="assets/script.js" defer></script>
 </head>
 
 <body>
+  <header class="navbar">
+    <a href="index.html" class="logo">ope674c<span>.dev</span></a>
 
-    <div class="background"></div>
+    <button class="menu-btn" id="menuBtn" aria-label="Open navigation menu">☰</button>
 
-    <main class="container">
-        <div class="card">
+    <nav id="navMenu">
+      <a href="/index">Home</a>
+      <a href="/about">About</a>
+      <a href="/projects">Projects</a>
+      <a href="/blog">Blog</a>
+      <a href="/changelog">Changelog</a>
+      <a href="/contact">Contact</a>
+    </nav>
+  </header>
 
-            <h1>⚠ Website Under Construction ⚠</h1>
+  <main class="hub-hero">
+    <section class="hub-intro">
+      <p class="eyebrow">Personal Internet Hub</p>
 
-            <p>
-                This website is currently being developed.
-            </p>
+      <h1>ope674c.dev</h1>
 
-            <p class="small-text">
-                This website has just been started, so there is not much to see yet. Please check back later for updates.
-            </p>
+      <p class="subtitle">
+        A central place for my projects, links, updates, experiments, and whatever else I decide to build.
+      </p>
 
-            <div class="status-box">
-                Status: Making things better! - May!
-            </div>
+      <div class="hero-buttons">
+        <a href="/projects" class="btn primary">Browse Projects</a>
+        <a href="#quick-links" class="btn secondary">Quick Links</a>
+      </div>
+    </section>
 
-        </div>
-    </main>
+    <section class="hub-status">
+      <p class="status-label">Current Status</p>
+      <h2>Being a sleepy Web Developer.</h2>
+      <p>
+        Working on too many projects...
+      </p>
+    </section>
+  </main>
 
-    <script src="assets/script.js"></script>
+  <section id="quick-links" class="section">
+    <p class="eyebrow">Quick Access</p>
+    <h2>Where do you want to go?</h2>
 
+    <div class="hub-grid">
+      <a href="about.html" class="hub-tile">
+        <span>About</span>
+        <p>Learn who I am, what I do, and what this website is for.</p>
+      </a>
+
+      <a href="projects.html" class="hub-tile">
+        <span>Projects</span>
+        <p>Websites, experiments, tools, radio work, and other builds.</p>
+      </a>
+
+      <a href="blog.html" class="hub-tile">
+        <span>Blog</span>
+        <p>Updates, devlogs, thoughts, announcements, and posts.</p>
+      </a>
+
+      <a href="contact.html" class="hub-tile">
+        <span>Contact</span>
+        <p>Ways to reach me or send something important.</p>
+      </a>
+
+      <a href="#" class="hub-tile">
+        <span>PLACEHOLDER</span>
+        <p>Add another link here later, like GitHub, Discord, or a project.</p>
+      </a>
+    </div>
+  </section>
+
+
+
+  
+  <section class="section contact-strip">
+    <p class="eyebrow">Contact</p>
+    <h2>Need something?</h2>
+    <p>
+      Contact me today! I don't bite.. sometimes. Whether it's a question, an opportunity, or just to say hi, feel free to reach out.
+    </p>
+
+    <a href="contact.html" class="btn primary">Contact Page</a>
+  </section>
+
+  <footer>
+    <p>© 2026 ope674c.dev. Built by May.</p>
+  </footer>
 </body>
 </html>
