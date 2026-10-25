@@ -56,6 +56,7 @@
   }
   function updatePresence(d) {
     if (!d) return;
+    updateActivityCard(d);
     const u = d.discord_user || {},
       a = $("myAvatar");
     if (a) {
@@ -153,19 +154,162 @@
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) rest();
   });
-  const friends = document.querySelectorAll("[data-discord-avatar]");
-  friends.forEach((img) => {
-    const uid = img.dataset.discordAvatar;
-    img.src = "https://unavatar.io/discord/" + encodeURIComponent(uid);
-    img.onerror = () => {
-      img.onerror = null;
-      img.src =
-        "https://cdn.discordapp.com/embed/avatars/" +
-        Number(BigInt(uid) % 6n) +
-        ".png";
-    };
-  });
+  const friends = [...document.querySelectorAll("[data-discord-avatar]")];
+  async function refreshFriendAvatars() {
+    await Promise.all(
+      friends.map(async (img) => {
+        const uid = img.dataset.discordAvatar;
+        if (!/^\d{17,20}$/.test(uid)) return;
+        img.dataset.loading = "true";
+        try {
+          const response = await fetch(
+            "https://discord-lookup.lookupbotdc.workers.dev/search/" + uid,
+            { signal: AbortSignal.timeout(10000), cache: "no-store" },
+          );
+          if (!response.ok) throw Error("Lookup unavailable");
+          const profile = await response.json();
+          const user = profile?.user || profile;
+          const hash = user?.avatar;
+          let url = "";
+          if (typeof hash === "string" && /^(a_)?[a-f0-9]{32}$/.test(hash)) {
+            // Discord's a_ prefix means an animated avatar; PNG would freeze it.
+            url = `https://cdn.discordapp.com/avatars/${uid}/${hash}.png?size=256`;
+            img.dataset.animatedAvatar = hash.startsWith("a_")
+              ? `https://cdn.discordapp.com/avatars/${uid}/${hash}.gif?size=256`
+              : "";
+          } else if (
+            typeof profile?.avatar_url === "string" &&
+            profile.avatar_url.startsWith("https://cdn.discordapp.com/")
+          ) {
+            url = profile.avatar_url;
+          }
+          if (!url) throw Error("No avatar available");
+          const test = new Image();
+          test.referrerPolicy = "no-referrer";
+          test.src = url;
+          await test.decode();
+          img.src = url;
+          img.closest(".friend-card")?.classList.add("has-avatar");
+          const banner = img
+            .closest(".friend-card")
+            ?.querySelector(".friend-banner");
+          const bannerHash = user?.banner;
+          if (
+            banner &&
+            typeof bannerHash === "string" &&
+            /^(a_)?[a-f0-9]{32}$/.test(bannerHash)
+          ) {
+            const bannerUrl = `https://cdn.discordapp.com/banners/${uid}/${bannerHash}.png?size=1024`;
+            banner.style.backgroundImage = `linear-gradient(0deg,rgba(10,12,20,.2),transparent),url("${bannerUrl}")`;
+            banner.dataset.bannerUrl = bannerUrl;
+          }
+        } catch (error) {
+          /* Keep last known image or default icon when lookup fails. */
+        } finally {
+          delete img.dataset.loading;
+        }
+      }),
+    );
+  }
+  refreshFriendAvatars();
+  setInterval(
+    () => {
+      if (!document.hidden) refreshFriendAvatars();
+    },
+    15 * 60 * 1000,
+  );
 
+  // The status endpoint is public and never requires an owner session.
+  async function refreshSystemStatus() {
+    const card = document.querySelector(".live-status"),
+      title = $("systemState"),
+      detail = $("systemDetail");
+    if (!card || !title) return;
+    try {
+      const response = await fetch("https://status.ope674c.dev/api/status", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(9000),
+      });
+      if (!response.ok) throw Error("Status API unavailable");
+      const data = await response.json();
+      const state = data?.overall?.status;
+      if (!["operational", "partial", "outage"].includes(state))
+        throw Error("Unknown state");
+      card.dataset.state = state;
+      title.textContent =
+        data.overall.title ||
+        {
+          operational: "All systems operational",
+          partial: "Service disruption",
+          outage: "Service outage",
+        }[state];
+      const count = Array.isArray(data.services) ? data.services.length : null;
+      detail.textContent =
+        (count !== null ? count + " monitored services · " : "") +
+        "View live status ↗";
+    } catch (e) {
+      card.dataset.state = "unknown";
+      title.textContent = "Status unavailable";
+      detail.textContent = "View monitoring dashboard ↗";
+    } finally {
+      title.classList.remove("is-loading");
+    }
+  }
+  refreshSystemStatus();
+  setInterval(() => {
+    if (!document.hidden) refreshSystemStatus();
+  }, 60000);
+  function updateActivityCard(d) {
+    const title = $("liveActivityTitle"),
+      detail = $("liveActivityDetail"),
+      art = $("liveActivityArt");
+    if (!title) return;
+    title.classList.remove("is-loading");
+    const spotify = d?.spotify;
+    const activities = (d?.activities || []).filter((x) => x && x.type !== 4);
+    const activity =
+      activities.find((x) => x.type === 0) ||
+      activities.find((x) => x.type === 2) ||
+      activities[0];
+    let image = "";
+    if (spotify) {
+      title.textContent = spotify.song || "Listening to Spotify";
+      detail.textContent =
+        [spotify.artist, spotify.album].filter(Boolean).join(" · ") ||
+        "Spotify";
+      image = spotify.album_art_url || "";
+    } else if (activity) {
+      title.textContent = activity.name || "Active on Discord";
+      detail.textContent =
+        [activity.details, activity.state].filter(Boolean).join(" · ") ||
+        "Currently active";
+      const asset = activity.assets?.large_image;
+      if (asset) {
+        if (asset.startsWith("mp:"))
+          image = "https://media.discordapp.net/" + asset.slice(3);
+        else if (/^https:\/\//.test(asset)) image = asset;
+        else if (activity.application_id && /^[\w-]+$/.test(asset))
+          image =
+            "https://cdn.discordapp.com/app-assets/" +
+            activity.application_id +
+            "/" +
+            asset +
+            ".png";
+      }
+    } else {
+      title.textContent = "Nothing playing right now";
+      detail.textContent = "Activity appears when available";
+    }
+    if (art) {
+      art.hidden = !image;
+      if (image) {
+        art.src = image;
+        art.onerror = () => {
+          art.hidden = true;
+        };
+      }
+    }
+  }
   const clock = (date, zone, opts = {}) =>
     new Intl.DateTimeFormat("en-US", { timeZone: zone, ...opts }).format(date);
   function offset(date, zone) {
@@ -247,4 +391,92 @@
   $("visitorZone").addEventListener("change", updateClock);
   updateClock();
   setInterval(updateClock, 30000);
+})();
+(() => {
+  "use strict";
+  const cards = [...document.querySelectorAll(".friend-card[data-friend-id]")];
+  const modal = document.getElementById("friendDialog"),
+    imageModal = document.getElementById("friendImageDialog");
+  if (!cards.length) return;
+  const staticSrc = new WeakMap();
+  function play(img) {
+    if (!img?.dataset.animatedAvatar) return;
+    staticSrc.set(img, img.src);
+    img.src = img.dataset.animatedAvatar;
+  }
+  function stop(img) {
+    if (staticSrc.has(img)) {
+      img.src = staticSrc.get(img);
+      staticSrc.delete(img);
+    }
+  }
+  cards.forEach((card) => {
+    const img = card.querySelector(".friend-avatar");
+    card.addEventListener("pointerenter", () => play(img));
+    card.addEventListener("pointerleave", () => stop(img));
+    card.addEventListener("focusin", () => play(img));
+    card.addEventListener("focusout", (e) => {
+      if (!card.contains(e.relatedTarget)) stop(img);
+    });
+  });
+  const open = (el) => {
+    if (el && !el.open && typeof el.showModal === "function") el.showModal();
+  };
+  const close = (el) => {
+    if (el?.open) el.close();
+  };
+  document.querySelectorAll("[data-open-friend]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const card = btn.closest(".friend-card");
+      if (!card || !modal) return;
+      const img = card.querySelector(".friend-avatar"),
+        banner = card.querySelector(".friend-banner");
+      document.getElementById("friendDialogTitle").textContent =
+        card.querySelector("h3")?.textContent || "";
+      document.getElementById("friendDialogDescription").textContent =
+        card.querySelector(".friend-description")?.textContent || "";
+      const av = document.getElementById("friendDialogAvatar");
+      av.src = img?.src || "";
+      av.dataset.animatedAvatar = img?.dataset.animatedAvatar || "";
+      const b = document.getElementById("friendDialogBanner");
+      b.style.backgroundImage = banner?.style.backgroundImage || "";
+      b.style.setProperty(
+        "--friend-hue",
+        card.style.getPropertyValue("--friend-hue"),
+      );
+      const links = document.getElementById("friendDialogLinks");
+      links.replaceChildren();
+      card
+        .querySelectorAll(".friend-link")
+        .forEach((a) => links.append(a.cloneNode(true)));
+      open(modal);
+    }),
+  );
+  document
+    .querySelectorAll("[data-close-friend]")
+    .forEach((b) => b.addEventListener("click", () => close(modal)));
+  document.querySelectorAll("[data-open-screenshot]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const img = document.getElementById("friendImageFull");
+      img.src = b.dataset.openScreenshot;
+      open(imageModal);
+    }),
+  );
+  document
+    .querySelectorAll("[data-close-image]")
+    .forEach((b) => b.addEventListener("click", () => close(imageModal)));
+  [modal, imageModal].forEach((d) =>
+    d?.addEventListener("click", (e) => {
+      if (e.target === d) close(d);
+    }),
+  );
+  modal?.addEventListener("pointerenter", () =>
+    play(document.getElementById("friendDialogAvatar")),
+  );
+  modal?.addEventListener("pointerleave", () =>
+    stop(document.getElementById("friendDialogAvatar")),
+  );
+  modal?.addEventListener("close", () =>
+    stop(document.getElementById("friendDialogAvatar")),
+  );
 })();
